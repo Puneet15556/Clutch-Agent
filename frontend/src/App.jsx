@@ -93,7 +93,10 @@ export default function App() {
       <header className="topbar">
         <div className="brand">
           <span className="mark">C</span>
-          <span className="name">Clutch</span>
+          <div className="brand-text">
+            <span className="name">Clutch</span>
+            <span className="tagline">your AI deadline agent</span>
+          </div>
         </div>
         <div className="progress">
           <span className="level">Level {level}</span>
