@@ -26,7 +26,7 @@ def build_ics(schedule: list) -> str:
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//Deadline Agent//EN",
+        "PRODID:-//Clutch//EN",
         "CALSCALE:GREGORIAN",
     ]
     for i, s in enumerate(schedule):
@@ -40,7 +40,7 @@ def build_ics(schedule: list) -> str:
         title = s.get("task", "Task")
         lines += [
             "BEGIN:VEVENT",
-            f"UID:da-{i}-{d.strftime('%Y%m%d')}@deadline-agent",
+            f"UID:da-{i}-{d.strftime('%Y%m%d')}@clutch",
             f"DTSTART:{_dt(d, start)}",
             f"DTEND:{_dt(d, end)}",
             f"SUMMARY:{title}",

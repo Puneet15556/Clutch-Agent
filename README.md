@@ -1,4 +1,4 @@
-# Deadline Agent
+# Clutch
 
 An AI productivity companion that turns a plain-language brain-dump into a prioritized, time-blocked day — and proactively explains its reasoning. Built for BlockseBlock Hackathon, Problem Statement 1 ("The Last-Minute Life Saver").
 
@@ -55,7 +55,7 @@ npm run dev                   # http://localhost:5173
 ## Deploy to Google Cloud Run
 
 ```bash
-gcloud run deploy deadline-agent \
+gcloud run deploy clutch \
   --source . \
   --region asia-south1 \
   --allow-unauthenticated \

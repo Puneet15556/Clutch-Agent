@@ -1,4 +1,4 @@
-# Deadline Agent — Backend (FastAPI + LangGraph + Gemini)
+# Clutch — Backend (FastAPI + LangGraph)
 
 AI productivity planner agent. Brain-dump do, agent usko **categorize → personalize difficulty → prioritize → energy-aware schedule** karke deta hai.
 

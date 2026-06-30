@@ -100,7 +100,7 @@ function dt(hhmm) {
 }
 
 export function buildIcs(schedule) {
-  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Deadline Agent//EN", "CALSCALE:GREGORIAN"];
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Clutch//EN", "CALSCALE:GREGORIAN"];
   schedule.forEach((s, i) => {
     if (!s.slot) return;
     const parts = s.slot.replace("–", "-").split("-");
@@ -108,7 +108,7 @@ export function buildIcs(schedule) {
     const [start, end] = parts.map((x) => x.trim());
     lines.push(
       "BEGIN:VEVENT",
-      `UID:da-${i}-${dt(start).slice(0, 8)}@deadline-agent`,
+      `UID:da-${i}-${dt(start).slice(0, 8)}@clutch`,
       `DTSTART:${dt(start)}`, `DTEND:${dt(end)}`,
       `SUMMARY:${s.task}`,
       `DESCRIPTION:${(s.reason || "").replace(/\n/g, " ")}`,

@@ -63,7 +63,7 @@ export default function App() {
     const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = "deadline-agent.ics"; a.click();
+    a.href = url; a.download = "clutch.ics"; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -92,8 +92,8 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="mark">DA</span>
-          <span className="name">Deadline Agent</span>
+          <span className="mark">C</span>
+          <span className="name">Clutch</span>
         </div>
         <div className="progress">
           <span className="level">Level {level}</span>

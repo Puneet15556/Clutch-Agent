@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from .graph import build_graph, build_replan_graph
 from .ics_export import build_ics
 
-app = FastAPI(title="Deadline Agent API")
+app = FastAPI(title="Clutch API")
 
 # frontend (React) ke liye CORS khol do — hackathon ke liye sab allow
 app.add_middleware(

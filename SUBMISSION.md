@@ -1,4 +1,4 @@
-# Deadline Agent — Project Description
+# Clutch — Project Description
 
 > Copy this into a Google Doc, set sharing to "Anyone with the link", and submit that link.
 
@@ -8,7 +8,7 @@
 
 ## Solution Overview
 
-Deadline Agent takes a plain-language brain-dump of everything on your plate and turns it into a prioritized, time-blocked day. An agentic pipeline (built on LangGraph) reads your words to extract deadlines, durations, importance, and difficulty; then deterministically scores priority and lays out a schedule that respects your sleep, fixed commitments, and peak-focus hours. It explains its reasoning, shows the assumptions it made, lets you adjust any task and re-plan instantly, and exports the day to your calendar with alarms.
+Clutch takes a plain-language brain-dump of everything on your plate and turns it into a prioritized, time-blocked day. An agentic pipeline (built on LangGraph) reads your words to extract deadlines, durations, importance, and difficulty; then deterministically scores priority and lays out a schedule that respects your sleep, fixed commitments, and peak-focus hours. It explains its reasoning, shows the assumptions it made, lets you adjust any task and re-plan instantly, and exports the day to your calendar with alarms.
 
 ## Key Features
 
