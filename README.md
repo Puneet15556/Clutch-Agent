@@ -6,9 +6,11 @@
 
 Turn a messy brain-dump into a prioritized, time-blocked day — automatically.
 
-**Live app:** _<paste your Cloud Run URL here after deploying>_
+### 🔗 Live app: **https://clutch-agent.onrender.com/**
 
-`React` · `FastAPI` · `LangGraph` · `Groq / Gemini` · `Google Cloud Run`
+`React` · `FastAPI` · `LangGraph` · `Groq (qwen3-32b)` · `Docker`
+
+*(Free hosting — the first load after idle may take ~30–50s to wake up.)*
 
 </div>
 
@@ -16,55 +18,64 @@ Turn a messy brain-dump into a prioritized, time-blocked day — automatically.
 
 ## The problem
 
-Students and professionals don't miss deadlines because they lack reminders — they miss them because **reminders are passive**. A notification tells you *that* something is due; it doesn't help you decide what to do first, how long it'll take, or when to fit it in. The result is the classic last-minute scramble.
+People don't miss deadlines because they lack reminders — they miss them because **reminders are passive**. A notification tells you *that* something is due; it doesn't help you decide what to do first, how long it'll take, or when to fit it in. The result is the classic last-minute scramble.
 
 ## The solution
 
-**Clutch** is an AI agent that does the planning *for* you. You describe everything on your plate in plain language; Clutch reads it, prioritizes it, schedules it around your real day, and explains every decision — so you act instead of panic.
+**Clutch** is an AI agent that does the planning *for* you. Describe everything on your plate in plain language; Clutch reads it, prioritizes it, schedules it around your real day, and explains every decision — so you take action instead of panicking.
+
+```
+You type:  "DSA 9–10, it's hard for me. Then revise ML, then a break.
+            Gym at 6 PM. Pay rent today, quick.
+            Prep 2 hours for the interview tomorrow — high priority."
+
+Clutch returns:  a ranked task list + an hour-by-hour schedule that anchors
+                 your fixed times, keeps your order, sizes each block, and hands
+                 you a calendar file with reminders.
+```
+
+---
+
+## ✨ Features
+
+- 🧠 **Natural-language capture** — no forms; type the way you think and the agent extracts the details.
+- ⏰ **Fixed clock times** — "gym at 6 PM" or "DSA 9–10" is anchored to that exact slot; everything flows around it.
+- 🔢 **Respects your order** — "X then Y then Z" is scheduled as a true forward sequence.
+- 🎯 **Smart prioritization** — a plain list is ranked by `urgency + importance + difficulty`, with hard tasks placed in your peak-focus hours.
+- ⏱️ **Difficulty-based durations** — no time given? Hard = 1h 30m, Normal = 1h, Easy = 45m. Any explicit time/range overrides this.
+- ↕️ **Manual reorder** — up/down arrows on each task instantly re-plan the day (durations kept, times recomputed).
+- ⚡ **Instant re-planning** — changing difficulty, importance, or order happens in the browser with zero wait.
+- 💬 **Transparent reasoning** — every task shows *why* it ranks where it does, plus the assumptions the agent made.
+- 📅 **Google Calendar integration** — **"Add all to calendar"** downloads an `.ics` with 10-minute reminder alarms (Google/Apple/Outlook, syncs to your phone); each task also has a one-click **"+ Google Calendar"** quick-add.
+- 🏆 **Gamified progress** — earn points and level up by finishing tasks on time.
+- 🧩 **Robust with duplicates** — every task has a stable id, so repeated names ("Break", "Make project") never confuse the ordering.
 
 ---
 
 ## What the agent understands (just type naturally)
 
-The agent reads cues straight from your sentence — no forms, no fields:
-
 | You write | Clutch understands |
 |---|---|
 | "submit report **by Friday**", "rent **today**" | **Deadlines** → urgency |
 | "gym **at 6 PM**", "DSA **9–10**" | **Fixed clock times** → anchored exactly |
-| "DSA, **then** lunch, **then** emails" | **Order** → kept in that sequence |
+| "DSA, **then** lunch, **then** emails" | **Order** → kept in sequence |
 | "coding is **hard for me**", "**quick** call" | **Difficulty** → Easy / Normal / Hard |
 | "read for **2 hours**" | **Duration** |
 | "interview prep, **high priority**" | **Importance** |
 
 ## How Clutch schedules your day
 
-The scheduling follows a clear, predictable set of rules:
+1. **Fixed times win** — "at 4 PM" / "9–10" is anchored; everything else flows around it.
+2. **Your order is respected** — "X then Y then Z" is placed as a true forward timeline.
+3. **Smart priority fills the rest** — tasks with no time/order are ranked, and hard tasks go into peak-focus hours.
+4. **Durations** — explicit time/range wins; otherwise Hard = 1h 30m, Normal = 1h, Easy = 45m.
+5. **No collisions** — flexible tasks never overlap your fixed events; if something can't fit before a fixed block, it's placed after.
 
-1. **Fixed times win.** "at 4 PM" or "9–10" is anchored to that exact slot; everything else flows around it.
-2. **Your order is respected.** If you say "X then Y then Z", they're placed in that sequence (as a true forward timeline).
-3. **Smart priority fills the rest.** Tasks with no time or order are ranked by `urgency + importance + difficulty`, and hard tasks are placed in your peak-focus hours.
-4. **Durations:**
-   - If you state a time/range/duration, that's used exactly.
-   - Otherwise, defaults by difficulty — **Hard = 1h 30m, Normal = 1h, Easy = 45m**.
-5. **No collisions.** Flexible tasks never overlap your fixed events; if something can't fit before a fixed block, it's placed after.
-
-## Key features
-
-- **Natural-language capture** — type the way you think; the agent extracts the details.
-- **Autonomous, explainable planning** — every task shows *why* it's ranked where it is.
-- **Manual reorder** — ↑ / ↓ arrows on each task; move one and the day re-plans instantly (durations kept, times recomputed).
-- **Instant in-browser re-planning** — changing difficulty, importance, or order never waits on the server.
-- **Transparent assumptions** — the agent reports every guess it made ("No deadline given for X — treated as flexible").
-- **Google Calendar integration:**
-  - **"Add all to calendar"** → downloads a standard `.ics` with every task and a **10-minute reminder alarm** (imports into Google / Apple / Outlook, syncs to your phone).
-  - **"+ Google Calendar"** on each task → one-click, opens Google Calendar with that event pre-filled (no login/OAuth needed).
-- **Gamified progress** — earn points and level up by completing tasks on time.
-- **Robust with duplicates** — every task has a stable id, so repeated names ("Break", "Make project") never confuse the ordering.
+---
 
 ## Architecture
 
-Clutch is an **agentic pipeline** built with LangGraph. The key design choice: the LLM handles *understanding language*, while the *planning math is deterministic Python* — so results are explainable, consistent, and never hallucinated.
+Clutch is an **agentic pipeline** built with LangGraph. The key design choice: the LLM handles *understanding language*, while the *planning math is deterministic* — so results are explainable, consistent, and never hallucinated.
 
 ```
                 ┌─────────── LLM (understands your words) ───────────┐
@@ -81,14 +92,18 @@ Clutch is an **agentic pipeline** built with LangGraph. The key design choice: t
 - **prioritize** — `score = urgency×2 + importance×1.5 + difficulty`.
 - **schedule** — anchors fixed times, honors your order, then smart-fills the rest.
 
-The full priority/schedule logic is **mirrored in the browser** (`frontend/src/planner.js`), so edits and reorders re-plan instantly with zero server calls.
+The full priority/schedule logic is **mirrored in the browser** (`frontend/src/planner.js`), so edits and reorders re-plan instantly with no server round-trip.
+
+---
 
 ## Tech stack
 
 - **Frontend:** React + Vite
 - **Backend:** FastAPI + LangGraph
-- **LLM:** provider-switchable via one env var — Groq (`qwen/qwen3-32b`) or Google Gemini (`gemini-2.0-flash`)
-- **Deployment:** Google Cloud Run, built by Google Cloud Build — a single container serves both the API and the React app
+- **LLM:** provider-switchable — Groq (`qwen/qwen3-32b`, default) or Google Gemini (`gemini-2.0-flash`), via one env var
+- **Deployment:** a single Docker container (FastAPI serves the built React app + the API), hosted on Render
+
+---
 
 ## Run locally
 
@@ -114,19 +129,14 @@ GROQ_API_KEY=gsk_...            # free key at console.groq.com/keys
 GROQ_MODEL=qwen/qwen3-32b
 ```
 
-## Deploy to Google Cloud Run
+## Deploy (Render)
 
-A single container builds the frontend and serves it from FastAPI alongside the API.
+One container builds the frontend and serves it from FastAPI alongside the API.
 
-```bash
-gcloud run deploy clutch \
-  --source . \
-  --region asia-south1 \
-  --allow-unauthenticated \
-  --set-env-vars LLM_PROVIDER=groq,GROQ_MODEL=qwen/qwen3-32b,GROQ_API_KEY=YOUR_KEY
-```
-
-The command returns a public `https://...run.app` URL — that's the live app.
+1. Push the repo to GitHub.
+2. Render → **New Web Service** → connect the repo → Runtime **Docker**, Instance **Free**.
+3. Add env vars: `LLM_PROVIDER=groq`, `GROQ_MODEL=qwen/qwen3-32b`, `GROQ_API_KEY=...`
+4. **Create Web Service** → get a public `https://…onrender.com` URL.
 
 ## Project structure
 
