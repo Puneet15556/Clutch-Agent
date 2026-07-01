@@ -156,5 +156,20 @@ clutch/
 │       └── planner.js      # client-side re-planning + Google Calendar links
 └── Dockerfile             # one image: build React + serve via FastAPI
 ```
+---
 
+## 🚀 Future improvements
+
+- **Two-way Google Calendar sync (OAuth)** — let Clutch create, update, and delete events automatically, instead of the one-click add.
+- **Accounts & cloud persistence** — save plans, points, and profile across devices (currently stored in the browser).
+- **Recurring tasks & habits** — "gym every weekday at 6 PM", daily streaks.
+- **Multi-day / weekly planning** — spread work across days and auto-carry unfinished tasks forward.
+- **Proactive nudges** — push/email reminders and "you're behind on X" alerts.
+- **Voice input** — speak your day instead of typing.
+- **Drag-and-drop reordering** — a richer alternative to the up/down arrows.
+- **Adaptive learning** — adjust difficulty and duration estimates from your actual completion history.
+- **Focus mode** — auto-insert breaks (Pomodoro-style) and protect deep-work blocks.
+- **Progress dashboard** — completion stats, streaks, and time-spent-by-category insights.
+
+---
 
