@@ -77,6 +77,7 @@ export function scheduleDay(tasks, profile) {
     const end = start + dur;
     busy.push([start, end]);
     schedule.push({
+      id: t.id,
       task: t.title, category: t.category, difficulty: t.difficulty,
       slot: `${toHHMM(start)}–${toHHMM(end)}`, reason, fixed: false,
     });
@@ -89,7 +90,7 @@ export function scheduleDay(tasks, profile) {
     let start = nextFree(from, dur);
     if (start === null) start = nextFree(wake, dur);
     if (start === null) {
-      schedule.push({ task: t.title, slot: null, note: "No room left today — carried to tomorrow." });
+      schedule.push({ id: t.id, task: t.title, slot: null, note: "No room left today — carried to tomorrow." });
       assumptions.push(`“${t.title}” didn't fit today; carried to tomorrow.`);
       return;
     }
@@ -113,7 +114,7 @@ export function scheduleDay(tasks, profile) {
     if (atStart.has(t)) { cursor = Math.max(cursor, atStart.get(t) + dur); return; }
     const start = nextFree(cursor, dur);
     if (start === null) {
-      schedule.push({ task: t.title, slot: null, note: "No room left today — carried to tomorrow." });
+      schedule.push({ id: t.id, task: t.title, slot: null, note: "No room left today — carried to tomorrow." });
       assumptions.push(`“${t.title}” didn't fit today; carried to tomorrow.`);
       return;
     }
@@ -127,10 +128,10 @@ export function scheduleDay(tasks, profile) {
   schedule.push(...fixedEntries);
   schedule.sort((a, b) => (a.slot || "99:99").localeCompare(b.slot || "99:99"));
 
-  // Reorder tasks to match the schedule so cards and timeline agree.
+  // Reorder tasks to match the schedule (keyed by id — safe with duplicate titles).
   const slotStart = {};
-  schedule.forEach((s) => { if (s.slot) slotStart[s.task] = toMin(s.slot.split("–")[0]); });
-  const tasksSorted = [...tasks].sort((a, b) => (slotStart[a.title] ?? 9999) - (slotStart[b.title] ?? 9999));
+  schedule.forEach((s) => { if (s.slot && s.id != null) slotStart[s.id] = toMin(s.slot.split("–")[0]); });
+  const tasksSorted = [...tasks].sort((a, b) => (slotStart[a.id] ?? 9999) - (slotStart[b.id] ?? 9999));
   return { schedule, assumptions, tasks: tasksSorted };
 }
 

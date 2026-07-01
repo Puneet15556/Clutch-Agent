@@ -46,7 +46,8 @@ def parse_node(state: PlannerState) -> dict:
         f"User message:\n{state['raw_input']}"
     )
     result = structured.invoke(prompt)
-    return {"tasks": [t.model_dump() for t in result.tasks]}
+    # Stable unique id per task so duplicate titles never collide downstream.
+    return {"tasks": [{**t.model_dump(), "id": i} for i, t in enumerate(result.tasks)]}
 
 
 # ----------------------------------------------------------------------------
@@ -214,6 +215,7 @@ def schedule_node(state: PlannerState) -> dict:
         end = start + dur
         busy.append((start, end, t["title"]))
         schedule.append({
+            "id": t.get("id"),
             "task": t["title"], "category": t.get("category"), "difficulty": t.get("difficulty"),
             "slot": f"{_to_hhmm(start)}–{_to_hhmm(end)}", "reason": reason, "fixed": False,
         })
@@ -227,7 +229,7 @@ def schedule_node(state: PlannerState) -> dict:
         search_from = peak_start if (respect_peak and t.get("difficulty") == "Hard") else wake
         start = next_free(search_from, dur) or next_free(wake, dur)
         if start is None:
-            schedule.append({"task": t["title"], "slot": None,
+            schedule.append({"id": t.get("id"), "task": t["title"], "slot": None,
                              "note": "No room left today — carried to tomorrow."})
             assumptions.append(f"“{t['title']}” didn't fit today; carried to tomorrow.")
             return
@@ -255,7 +257,7 @@ def schedule_node(state: PlannerState) -> dict:
             continue
         start = next_free(cursor, dur)
         if start is None:
-            schedule.append({"task": t["title"], "slot": None,
+            schedule.append({"id": t.get("id"), "task": t["title"], "slot": None,
                              "note": "No room left today — carried to tomorrow."})
             assumptions.append(f"“{t['title']}” didn't fit today; carried to tomorrow.")
             continue
@@ -270,9 +272,10 @@ def schedule_node(state: PlannerState) -> dict:
     schedule += fixed_entries
     schedule.sort(key=lambda s: s["slot"] or "99:99")
 
-    # Reorder the task list to match the schedule so the cards and timeline agree.
-    slot_start = {s["task"]: _to_min(s["slot"].split("–")[0]) for s in schedule if s.get("slot")}
-    tasks_sorted = sorted(tasks, key=lambda t: slot_start.get(t["title"], 9999))
+    # Reorder the task list to match the schedule (keyed by id — safe with duplicate titles).
+    slot_start = {s["id"]: _to_min(s["slot"].split("–")[0])
+                  for s in schedule if s.get("slot") and s.get("id") is not None}
+    tasks_sorted = sorted(tasks, key=lambda t: slot_start.get(t.get("id"), 9999))
     return {"schedule": schedule, "assumptions": assumptions, "tasks": tasks_sorted}
 
 
