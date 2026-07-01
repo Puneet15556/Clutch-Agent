@@ -78,6 +78,22 @@ export default function App() {
     setIcs(buildIcs(sch));
   }
 
+  // Move a task up/down -> lock in the manual order and re-plan (durations kept,
+  // times recomputed top-to-bottom; fixed-time tasks stay anchored).
+  function moveTask(idx, dir) {
+    const j = idx + dir;
+    if (j < 0 || j >= tasks.length) return;
+    const arr = [...tasks];
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    const manual = arr.map((t, i) => ({ ...t, order: i + 1 }));
+    const scored = prioritize(manual);
+    const { schedule: sch, assumptions: asm, tasks: ordered } = scheduleDay(scored, profile);
+    setTasks(ordered);
+    setSchedule(sch);
+    setAssumptions(asm);
+    setIcs(buildIcs(sch));
+  }
+
   // Complete a task -> award points and remove it
   function completeTask(idx) {
     const t = tasks[idx];
@@ -167,7 +183,15 @@ export default function App() {
               <div className="task" key={i}>
                 <div className="task-top">
                   <span className="task-title">{t.title}</span>
-                  <button className="ghost" onClick={() => completeTask(i)}>Mark done</button>
+                  <div className="task-actions">
+                    {i > 0 && (
+                      <button className="arrow" title="Move up" onClick={() => moveTask(i, -1)}>↑</button>
+                    )}
+                    {i < tasks.length - 1 && (
+                      <button className="arrow" title="Move down" onClick={() => moveTask(i, 1)}>↓</button>
+                    )}
+                    <button className="ghost" onClick={() => completeTask(i)}>Mark done</button>
+                  </div>
                 </div>
 
                 <div className="task-meta">
