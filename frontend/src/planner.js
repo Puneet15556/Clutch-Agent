@@ -96,12 +96,33 @@ export function scheduleDay(tasks, profile) {
     add(t, start, t.reason);
   };
 
-  // Phase 1: explicit clock times, anchored exactly.
-  tasks.forEach((t) => { if (t.at_time) add(t, toMin(t.at_time), `Fixed time you set (${t.at_time}).`); });
-  // Phase 2: tasks you gave an explicit order — placed in sequence (order > peak).
-  tasks.filter((t) => !t.at_time && t.order != null).sort((a, b) => a.order - b.order).forEach((t) => flow(t, false));
-  // Phase 3: the rest — smart-prioritized (highest score first).
-  tasks.filter((t) => !t.at_time && t.order == null).sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0)).forEach((t) => flow(t, true));
+  // Phase 1: reserve fixed clock-time tasks exactly where they belong.
+  const atStart = new Map();
+  tasks.forEach((t) => {
+    if (!t.at_time) return;
+    const start = toMin(t.at_time);
+    add(t, start, `Fixed time you set (${t.at_time}).`);
+    atStart.set(t, start);
+  });
+
+  // Phase 2: explicit order as a TRUE forward sequence; fixed times push the cursor
+  // forward so later tasks land after them instead of filling earlier gaps.
+  let cursor = wake;
+  tasks.filter((t) => t.order != null).sort((a, b) => a.order - b.order).forEach((t) => {
+    const dur = durationOf(t);
+    if (atStart.has(t)) { cursor = Math.max(cursor, atStart.get(t) + dur); return; }
+    const start = nextFree(cursor, dur);
+    if (start === null) {
+      schedule.push({ task: t.title, slot: null, note: "No room left today — carried to tomorrow." });
+      assumptions.push(`“${t.title}” didn't fit today; carried to tomorrow.`);
+      return;
+    }
+    add(t, start, t.reason);
+    cursor = start + dur;
+  });
+
+  // Phase 3: no order and no fixed time — smart-prioritized into remaining gaps.
+  tasks.filter((t) => t.order == null && !t.at_time).sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0)).forEach((t) => flow(t, true));
 
   schedule.push(...fixedEntries);
   schedule.sort((a, b) => (a.slot || "99:99").localeCompare(b.slot || "99:99"));

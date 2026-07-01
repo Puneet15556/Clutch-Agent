@@ -233,21 +233,37 @@ def schedule_node(state: PlannerState) -> dict:
             return
         add(t, start, t.get("reason"))
 
-    # Phase 1: tasks with an explicit clock time are anchored exactly there.
+    # Phase 1: reserve fixed clock-time tasks exactly where they belong.
+    at_start = {}
     for t in tasks:
         if t.get("at_time"):
             try:
-                add(t, _to_min(t["at_time"]), f"Fixed time you set ({t['at_time']}).")
+                start = _to_min(t["at_time"])
             except (ValueError, AttributeError):
-                flow(t)
+                continue
+            add(t, start, f"Fixed time you set ({t['at_time']}).")
+            at_start[id(t)] = start
 
-    # Phase 2: tasks you gave an explicit order — placed in that sequence (order > peak).
-    for t in sorted((x for x in tasks if not x.get("at_time") and x.get("order") is not None),
-                    key=lambda x: x["order"]):
-        flow(t, respect_peak=False)
+    # Phase 2: tasks you gave an explicit order — placed as a TRUE forward sequence.
+    # A cursor only moves forward, and each fixed-time task pushes the cursor past it,
+    # so later tasks land after it instead of filling earlier gaps.
+    cursor = wake
+    for t in sorted((x for x in tasks if x.get("order") is not None), key=lambda x: x["order"]):
+        dur = _duration(t)
+        if id(t) in at_start:                       # already placed at its fixed time
+            cursor = max(cursor, at_start[id(t)] + dur)
+            continue
+        start = next_free(cursor, dur)
+        if start is None:
+            schedule.append({"task": t["title"], "slot": None,
+                             "note": "No room left today — carried to tomorrow."})
+            assumptions.append(f"“{t['title']}” didn't fit today; carried to tomorrow.")
+            continue
+        add(t, start, t.get("reason"))
+        cursor = start + dur
 
-    # Phase 3: everything else — smart-prioritized (highest score first).
-    for t in sorted((x for x in tasks if not x.get("at_time") and x.get("order") is None),
+    # Phase 3: no order and no fixed time — smart-prioritized into remaining gaps.
+    for t in sorted((x for x in tasks if x.get("order") is None and not x.get("at_time")),
                     key=lambda x: x.get("priority_score") or 0, reverse=True):
         flow(t)
 
