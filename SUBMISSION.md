@@ -22,13 +22,16 @@ Under the hood, Clutch is an **agentic pipeline** built on LangGraph. We made a 
 
 ## Key Features
 
-- **Natural-language task capture** — no forms; the agent reads cues like "hard for me", "urgent", "today", or "2 hours" directly from a sentence.
-- **Autonomous prioritization** — combines deadline urgency, stated importance, and difficulty into a transparent priority score.
-- **Energy-aware scheduling** — schedules hard tasks during the user's peak-focus window and automatically works around fixed commitments and sleep.
-- **Explainable reasoning + assumptions** — every ranking comes with a reason, and the agent reports the assumptions it made when information was missing.
-- **Instant in-browser re-planning** — adjusting a task's difficulty or importance re-plans the whole day immediately, with no server round-trip.
-- **Calendar export with reminders** — one click produces a standard `.ics` file with alarms, importable into Google Calendar, Apple Calendar, or Outlook.
-- **Gamified progress** — points and levels reward completing tasks on time, encouraging follow-through.
+- **Natural-language task capture** — no forms; the agent reads cues like "hard for me", "urgent", "today", "9–10", or "2 hours" directly from a sentence.
+- **Fixed clock times** — "gym at 6 PM" or "DSA 9–10" is anchored to that exact slot; everything else flows around it.
+- **Respects your order** — "X then Y then Z" is scheduled as a true forward sequence; a plain list is smart-prioritized instead.
+- **Smart, explainable prioritization** — combines deadline urgency, importance, and difficulty into a transparent score, with hard tasks placed in peak-focus hours.
+- **Difficulty-based durations** — when no time is given, Hard = 1h 30m, Normal = 1h, Easy = 45m; an explicit time or range overrides this.
+- **Manual reorder** — up/down arrows on each task instantly re-plan the day (durations kept, times recomputed).
+- **Instant in-browser re-planning** — editing difficulty, importance, or order never waits on the server.
+- **Transparent assumptions** — every ranking has a reason, and the agent reports the guesses it made when information was missing.
+- **Google Calendar integration** — "Add all to calendar" downloads an `.ics` with 10-minute reminder alarms; each task also has a one-click "+ Google Calendar" quick-add.
+- **Gamified progress** — points and levels reward completing tasks on time.
 
 ## Technologies Used
 
