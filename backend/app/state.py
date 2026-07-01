@@ -9,7 +9,11 @@ CATEGORIES = ["Study", "Coding/DSA", "Admin/Bills", "Meetings", "Personal/Health
 class Task(BaseModel):
     title: str
     deadline: Optional[str] = Field(None, description="ISO date 'YYYY-MM-DD' agar pata ho, warna null")
-    est_minutes: int = Field(60, description="Estimated time in minutes (guess karo)")
+    est_minutes: Optional[int] = Field(
+        None,
+        description="Duration in minutes ONLY if the user states a duration or a time range "
+                    "(e.g. '2 hours' -> 120, '30 min' -> 30, a range '9-10' -> 60); otherwise null",
+    )
     importance: str = Field("medium", description="low | medium | high")
     at_time: Optional[str] = Field(
         None,

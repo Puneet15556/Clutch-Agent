@@ -32,6 +32,10 @@ export function prioritize(tasks) {
   });
 }
 
+// Default duration by difficulty — used ONLY when the user gave no duration/time.
+const DIFF_MINUTES = { Easy: 45, Normal: 60, Hard: 90 };
+const durationOf = (t) => (t.est_minutes ? parseInt(t.est_minutes) : (DIFF_MINUTES[t.difficulty || "Normal"] ?? 60));
+
 const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
 const toHHMM = (m) => `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
 const peakStart = (peak) => ({
@@ -69,7 +73,7 @@ export function scheduleDay(tasks, profile) {
   const schedule = [];
 
   const add = (t, start, reason) => {
-    const dur = parseInt(t.est_minutes) || 60;
+    const dur = durationOf(t);
     const end = start + dur;
     busy.push([start, end]);
     schedule.push({
@@ -79,7 +83,7 @@ export function scheduleDay(tasks, profile) {
   };
 
   const flow = (t, respectPeak = true) => {
-    const dur = parseInt(t.est_minutes) || 60;
+    const dur = durationOf(t);
     if (!t.deadline) assumptions.push(`No deadline given for “${t.title}” — treated as flexible.`);
     const from = respectPeak && t.difficulty === "Hard" ? ps : wake;
     let start = nextFree(from, dur);

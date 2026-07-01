@@ -30,14 +30,15 @@ def parse_node(state: PlannerState) -> dict:
         f"Read their own words carefully and capture, per task:\n"
         f"- title: short and clear — do NOT include the time or date words in the title "
         f"(e.g. 'Driving at 4 PM' -> title 'Driving')\n"
-        f"- at_time: if the user named a specific clock time to do it (e.g. 'at 4 PM', '9am', "
-        f"'by 5:30'), output it as 'HH:MM' 24-hour ('4 PM' -> '16:00'); otherwise null\n"
+        f"- at_time: if the user named a specific clock time OR a time range (e.g. 'at 4 PM' -> '16:00', "
+        f"'9am' -> '09:00', '9-10' -> '09:00'), output the START as 'HH:MM' 24-hour; otherwise null\n"
         f"- order: if the user explicitly states a sequence (words like 'then', 'first', "
         f"'after that', 'next', or a numbered list), number the tasks 1,2,3... in that stated "
         f"sequence; if the tasks are just listed with no ordering intent, leave order null\n"
         f"- deadline: ISO 'YYYY-MM-DD' if a date/day is mentioned (resolve 'today', 'tomorrow', "
         f"'Friday' relative to today's date); otherwise null\n"
-        f"- est_minutes: use any duration the user states (e.g. '2 hours' -> 120); otherwise a realistic estimate\n"
+        f"- est_minutes: the duration in minutes ONLY if the user states a duration or a time range "
+        f"(e.g. '2 hours' -> 120, '45 min' -> 45, a range '9-10' -> 60); otherwise null\n"
         f"- importance: low | medium | high — infer from cues like 'urgent', 'important', 'must', "
         f"'critical', 'do this first' (default medium)\n"
         f"- difficulty: Easy | Normal | Hard — ONLY set this if the user signals it "
@@ -144,6 +145,16 @@ def prioritize_node(state: PlannerState) -> dict:
 # ----------------------------------------------------------------------------
 # NODE 4 — schedule: energy-aware time-blocking (Python)
 # ----------------------------------------------------------------------------
+# Default duration by difficulty — used ONLY when the user gave no duration/time.
+DIFF_MINUTES = {"Easy": 45, "Normal": 60, "Hard": 90}
+
+
+def _duration(t: dict) -> int:
+    if t.get("est_minutes"):
+        return int(t["est_minutes"])
+    return DIFF_MINUTES.get(t.get("difficulty") or "Normal", 60)
+
+
 def _to_min(hhmm: str) -> int:
     h, m = hhmm.split(":")
     return int(h) * 60 + int(m)
@@ -199,7 +210,7 @@ def schedule_node(state: PlannerState) -> dict:
     tasks = state["tasks"]
 
     def add(t: dict, start: int, reason: str) -> None:
-        dur = int(t.get("est_minutes") or 60)
+        dur = _duration(t)
         end = start + dur
         busy.append((start, end, t["title"]))
         schedule.append({
@@ -208,7 +219,7 @@ def schedule_node(state: PlannerState) -> dict:
         })
 
     def flow(t: dict, respect_peak: bool = True) -> None:
-        dur = int(t.get("est_minutes") or 60)
+        dur = _duration(t)
         if not t.get("deadline"):
             assumptions.append(f"No deadline given for “{t['title']}” — treated as flexible.")
         # Hard tasks prefer the peak window — but only when we're free to reorder.
