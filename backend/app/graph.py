@@ -28,7 +28,10 @@ def parse_node(state: PlannerState) -> dict:
     prompt = (
         f"Today's date is {today}. Extract a list of tasks from the user's message below. "
         f"Read their own words carefully and capture, per task:\n"
-        f"- title: short and clear\n"
+        f"- title: short and clear — do NOT include the time or date words in the title "
+        f"(e.g. 'Driving at 4 PM' -> title 'Driving')\n"
+        f"- at_time: if the user named a specific clock time to do it (e.g. 'at 4 PM', '9am', "
+        f"'by 5:30'), output it as 'HH:MM' 24-hour ('4 PM' -> '16:00'); otherwise null\n"
         f"- deadline: ISO 'YYYY-MM-DD' if a date/day is mentioned (resolve 'today', 'tomorrow', "
         f"'Friday' relative to today's date); otherwise null\n"
         f"- est_minutes: use any duration the user states (e.g. '2 hours' -> 120); otherwise a realistic estimate\n"
@@ -68,18 +71,10 @@ def clarify_node(state: PlannerState) -> dict:
 def enrich_node(state: PlannerState) -> dict:
     tasks = state["tasks"]
 
-    # User ne jo manually choose kiya (category/difficulty), use yaad rakho —
-    # AI ko sirf KHAALI fields bharne hain, user ki choice override NAHI karni.
-    user_choice = [
-        {"category": t.get("category"), "difficulty": t.get("difficulty")}
-        for t in tasks
-    ]
-
     llm = get_llm()
     structured = llm.with_structured_output(ParsedTasks)
     prompt = (
-        f"For each task below, fill ONLY the fields that are null. Never change a field that "
-        f"already has a value — the user (or earlier parsing) set it intentionally.\n"
+        f"For each task below, fill ONLY the fields that are null:\n"
         f"- category: choose one of {CATEGORIES}\n"
         f"- difficulty: Easy / Normal / Hard, judged by the task's typical cognitive effort "
         f"and the time it usually demands\n"
@@ -87,16 +82,21 @@ def enrich_node(state: PlannerState) -> dict:
         f"Tasks JSON:\n{json.dumps(tasks, ensure_ascii=False)}"
     )
     result = structured.invoke(prompt)
-    enriched = [t.model_dump() for t in result.tasks]
+    llm_tasks = [t.model_dump() for t in result.tasks]
 
-    # Safety net: user ki manual choice wapas restore karo (AI galti se badle to bhi)
-    for i, t in enumerate(enriched):
-        if i < len(user_choice):
-            if user_choice[i]["category"]:
-                t["category"] = user_choice[i]["category"]
-            if user_choice[i]["difficulty"]:
-                t["difficulty"] = user_choice[i]["difficulty"]
-    return {"tasks": enriched}
+    # Merge onto the ORIGINAL tasks: keep everything parse extracted (at_time, deadline,
+    # est_minutes, importance, title) and only take category/difficulty from the LLM,
+    # and only where the user hasn't already set them.
+    merged = []
+    for i, orig in enumerate(tasks):
+        out = dict(orig)
+        llm_t = llm_tasks[i] if i < len(llm_tasks) else {}
+        if not out.get("category"):
+            out["category"] = llm_t.get("category")
+        if not out.get("difficulty"):
+            out["difficulty"] = llm_t.get("difficulty")
+        merged.append(out)
+    return {"tasks": merged}
 
 
 # ----------------------------------------------------------------------------
@@ -193,7 +193,32 @@ def schedule_node(state: PlannerState) -> dict:
         return None
 
     schedule = []
-    for t in state["tasks"]:
+    tasks = state["tasks"]
+
+    # 1) Tasks with an explicit clock time are anchored exactly there.
+    for t in tasks:
+        if not t.get("at_time"):
+            continue
+        dur = int(t.get("est_minutes") or 60)
+        try:
+            start = _to_min(t["at_time"])
+        except (ValueError, AttributeError):
+            continue
+        end = start + dur
+        busy.append((start, end, t["title"]))
+        schedule.append({
+            "task": t["title"],
+            "category": t.get("category"),
+            "difficulty": t.get("difficulty"),
+            "slot": f"{_to_hhmm(start)}–{_to_hhmm(end)}",
+            "reason": f"Fixed time you set ({t['at_time']}).",
+            "fixed": False,
+        })
+
+    # 2) The remaining tasks flow into free slots around everything above.
+    for t in tasks:
+        if t.get("at_time"):
+            continue
         dur = int(t.get("est_minutes") or 60)
         if not t.get("deadline"):
             assumptions.append(f"No deadline given for “{t['title']}” — treated as flexible.")

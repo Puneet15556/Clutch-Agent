@@ -11,6 +11,11 @@ class Task(BaseModel):
     deadline: Optional[str] = Field(None, description="ISO date 'YYYY-MM-DD' agar pata ho, warna null")
     est_minutes: int = Field(60, description="Estimated time in minutes (guess karo)")
     importance: str = Field("medium", description="low | medium | high")
+    at_time: Optional[str] = Field(
+        None,
+        description="Specific start time as 'HH:MM' 24-hour, ONLY if the user named a clock time "
+                    "(e.g. 'at 4 PM' -> '16:00', '9am' -> '09:00'); otherwise null",
+    )
     category: Optional[str] = Field(None, description=f"In mein se ek: {CATEGORIES}")
     difficulty: Optional[str] = Field(None, description="Easy | Normal | Hard")
     # ye fields backend khud bharta hai:

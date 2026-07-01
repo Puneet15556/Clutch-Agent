@@ -68,7 +68,23 @@ export function scheduleDay(tasks, profile) {
   };
 
   const schedule = [];
+
+  // 1) Tasks with an explicit clock time are anchored exactly there.
   tasks.forEach((t) => {
+    if (!t.at_time) return;
+    const dur = parseInt(t.est_minutes) || 60;
+    const start = toMin(t.at_time);
+    const end = start + dur;
+    busy.push([start, end]);
+    schedule.push({
+      task: t.title, category: t.category, difficulty: t.difficulty,
+      slot: `${toHHMM(start)}–${toHHMM(end)}`, reason: `Fixed time you set (${t.at_time}).`, fixed: false,
+    });
+  });
+
+  // 2) The rest flow into free slots around everything above.
+  tasks.forEach((t) => {
+    if (t.at_time) return;
     const dur = parseInt(t.est_minutes) || 60;
     if (!t.deadline) assumptions.push(`No deadline given for “${t.title}” — treated as flexible.`);
     const from = t.difficulty === "Hard" ? ps : wake;
