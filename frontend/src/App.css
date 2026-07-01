@@ -50,7 +50,11 @@
   margin-bottom: 22px;
 }
 .card-title { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
-.card-sub { font-size: 13.5px; color: var(--text-dim); margin: 6px 0 22px; }
+.card-sub { font-size: 13.5px; color: var(--text-dim); margin: 6px 0 16px; }
+
+.cues { margin: 0 0 20px; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; }
+.cues li { font-size: 13.5px; color: var(--text-dim); line-height: 1.5; }
+.cues b { color: var(--text); font-weight: 600; }
 
 /* Fields */
 .field-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 24px; }

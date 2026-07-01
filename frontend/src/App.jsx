@@ -155,14 +155,22 @@ export default function App() {
 
       {/* Input */}
       <section className="card">
-        <h2 className="card-title">What's on your plate?</h2>
+        <h2 className="card-title">Tell me your day</h2>
         <p className="card-sub">
-          Describe everything in plain language — mention deadlines, how long something takes,
-          what's urgent, or what feels hard. The agent reads those cues and plans accordingly.
+          Just type it the way you'd say it — no forms, no fields. The more you mention,
+          the smarter the plan. The agent picks up on all of these:
         </p>
+        <ul className="cues">
+          <li><b>Deadlines</b> — “submit the report by Friday”, “rent today”</li>
+          <li><b>Specific times</b> — “gym at 6 PM”, “DSA 9–10”</li>
+          <li><b>Order</b> — “DSA, then lunch, then emails” (kept in sequence)</li>
+          <li><b>How hard it feels</b> — “coding is hard for me”, “quick call”</li>
+          <li><b>How long it takes</b> — “read for 2 hours”</li>
+          <li><b>What's urgent</b> — “interview prep, high priority”</li>
+        </ul>
 
         <textarea value={raw} onChange={(e) => setRaw(e.target.value)}
-          placeholder={"e.g. Finish the DSA assignment by Friday — it's hard for me and high priority.\nPay rent today, quick.\nPrep about 2 hours for the interview tomorrow."} />
+          placeholder={"e.g. DSA 9–10, it's hard for me. Then revise ML, then a break.\nGym at 6 PM. Pay rent today, quick.\nPrep 2 hours for the interview tomorrow — high priority."} />
 
         <button className="primary" disabled={loading || !raw.trim()} onClick={runPlan}>
           {loading ? "Planning…" : "Plan my day"}
