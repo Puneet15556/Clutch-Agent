@@ -18,7 +18,8 @@ function urgency(deadline) {
 }
 
 export function prioritize(tasks) {
-  const out = tasks.map((t) => {
+  // No sorting here — scheduleDay decides final order (fixed time > user order > priority).
+  return tasks.map((t) => {
     const u = urgency(t.deadline);
     const i = IMP[(t.importance || "medium").toLowerCase()] ?? 2;
     const d = DIF[t.difficulty || "Normal"] ?? 2;
@@ -29,8 +30,6 @@ export function prioritize(tasks) {
       reason: `Urgency ${u}/5, importance ${i}/3, difficulty ${t.difficulty || "Normal"} — hence this position.`,
     };
   });
-  out.sort((a, b) => b.priority_score - a.priority_score);
-  return out;
 }
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(":").map(Number); return h * 60 + m; };
@@ -69,25 +68,20 @@ export function scheduleDay(tasks, profile) {
 
   const schedule = [];
 
-  // 1) Tasks with an explicit clock time are anchored exactly there.
-  tasks.forEach((t) => {
-    if (!t.at_time) return;
+  const add = (t, start, reason) => {
     const dur = parseInt(t.est_minutes) || 60;
-    const start = toMin(t.at_time);
     const end = start + dur;
     busy.push([start, end]);
     schedule.push({
       task: t.title, category: t.category, difficulty: t.difficulty,
-      slot: `${toHHMM(start)}–${toHHMM(end)}`, reason: `Fixed time you set (${t.at_time}).`, fixed: false,
+      slot: `${toHHMM(start)}–${toHHMM(end)}`, reason, fixed: false,
     });
-  });
+  };
 
-  // 2) The rest flow into free slots around everything above.
-  tasks.forEach((t) => {
-    if (t.at_time) return;
+  const flow = (t, respectPeak = true) => {
     const dur = parseInt(t.est_minutes) || 60;
     if (!t.deadline) assumptions.push(`No deadline given for “${t.title}” — treated as flexible.`);
-    const from = t.difficulty === "Hard" ? ps : wake;
+    const from = respectPeak && t.difficulty === "Hard" ? ps : wake;
     let start = nextFree(from, dur);
     if (start === null) start = nextFree(wake, dur);
     if (start === null) {
@@ -95,17 +89,24 @@ export function scheduleDay(tasks, profile) {
       assumptions.push(`“${t.title}” didn't fit today; carried to tomorrow.`);
       return;
     }
-    const end = start + dur;
-    busy.push([start, end]);
-    schedule.push({
-      task: t.title, category: t.category, difficulty: t.difficulty,
-      slot: `${toHHMM(start)}–${toHHMM(end)}`, reason: t.reason, fixed: false,
-    });
-  });
+    add(t, start, t.reason);
+  };
+
+  // Phase 1: explicit clock times, anchored exactly.
+  tasks.forEach((t) => { if (t.at_time) add(t, toMin(t.at_time), `Fixed time you set (${t.at_time}).`); });
+  // Phase 2: tasks you gave an explicit order — placed in sequence (order > peak).
+  tasks.filter((t) => !t.at_time && t.order != null).sort((a, b) => a.order - b.order).forEach((t) => flow(t, false));
+  // Phase 3: the rest — smart-prioritized (highest score first).
+  tasks.filter((t) => !t.at_time && t.order == null).sort((a, b) => (b.priority_score || 0) - (a.priority_score || 0)).forEach((t) => flow(t, true));
 
   schedule.push(...fixedEntries);
   schedule.sort((a, b) => (a.slot || "99:99").localeCompare(b.slot || "99:99"));
-  return { schedule, assumptions };
+
+  // Reorder tasks to match the schedule so cards and timeline agree.
+  const slotStart = {};
+  schedule.forEach((s) => { if (s.slot) slotStart[s.task] = toMin(s.slot.split("–")[0]); });
+  const tasksSorted = [...tasks].sort((a, b) => (slotStart[a.title] ?? 9999) - (slotStart[b.title] ?? 9999));
+  return { schedule, assumptions, tasks: tasksSorted };
 }
 
 function dt(hhmm) {

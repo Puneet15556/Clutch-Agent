@@ -32,6 +32,9 @@ def parse_node(state: PlannerState) -> dict:
         f"(e.g. 'Driving at 4 PM' -> title 'Driving')\n"
         f"- at_time: if the user named a specific clock time to do it (e.g. 'at 4 PM', '9am', "
         f"'by 5:30'), output it as 'HH:MM' 24-hour ('4 PM' -> '16:00'); otherwise null\n"
+        f"- order: if the user explicitly states a sequence (words like 'then', 'first', "
+        f"'after that', 'next', or a numbered list), number the tasks 1,2,3... in that stated "
+        f"sequence; if the tasks are just listed with no ordering intent, leave order null\n"
         f"- deadline: ISO 'YYYY-MM-DD' if a date/day is mentioned (resolve 'today', 'tomorrow', "
         f"'Friday' relative to today's date); otherwise null\n"
         f"- est_minutes: use any duration the user states (e.g. '2 hours' -> 120); otherwise a realistic estimate\n"
@@ -134,7 +137,7 @@ def prioritize_node(state: PlannerState) -> dict:
             f"Urgency {u}/5, importance {i}/3, "
             f"difficulty {t.get('difficulty', 'Normal')} — hence this position."
         )
-    tasks.sort(key=lambda x: x["priority_score"], reverse=True)
+    # No sorting here — schedule_node decides final order (fixed time > user order > priority).
     return {"tasks": tasks}
 
 
@@ -195,56 +198,55 @@ def schedule_node(state: PlannerState) -> dict:
     schedule = []
     tasks = state["tasks"]
 
-    # 1) Tasks with an explicit clock time are anchored exactly there.
-    for t in tasks:
-        if not t.get("at_time"):
-            continue
+    def add(t: dict, start: int, reason: str) -> None:
         dur = int(t.get("est_minutes") or 60)
-        try:
-            start = _to_min(t["at_time"])
-        except (ValueError, AttributeError):
-            continue
         end = start + dur
         busy.append((start, end, t["title"]))
         schedule.append({
-            "task": t["title"],
-            "category": t.get("category"),
-            "difficulty": t.get("difficulty"),
-            "slot": f"{_to_hhmm(start)}–{_to_hhmm(end)}",
-            "reason": f"Fixed time you set ({t['at_time']}).",
-            "fixed": False,
+            "task": t["title"], "category": t.get("category"), "difficulty": t.get("difficulty"),
+            "slot": f"{_to_hhmm(start)}–{_to_hhmm(end)}", "reason": reason, "fixed": False,
         })
 
-    # 2) The remaining tasks flow into free slots around everything above.
-    for t in tasks:
-        if t.get("at_time"):
-            continue
+    def flow(t: dict, respect_peak: bool = True) -> None:
         dur = int(t.get("est_minutes") or 60)
         if not t.get("deadline"):
             assumptions.append(f"No deadline given for “{t['title']}” — treated as flexible.")
-
-        # Hard tasks start their search from the peak-focus window.
-        search_from = peak_start if (t.get("difficulty") == "Hard") else wake
+        # Hard tasks prefer the peak window — but only when we're free to reorder.
+        # If you gave an explicit sequence, your order wins over energy optimization.
+        search_from = peak_start if (respect_peak and t.get("difficulty") == "Hard") else wake
         start = next_free(search_from, dur) or next_free(wake, dur)
         if start is None:
             schedule.append({"task": t["title"], "slot": None,
                              "note": "No room left today — carried to tomorrow."})
             assumptions.append(f"“{t['title']}” didn't fit today; carried to tomorrow.")
-            continue
-        end = start + dur
-        busy.append((start, end, t["title"]))
-        schedule.append({
-            "task": t["title"],
-            "category": t.get("category"),
-            "difficulty": t.get("difficulty"),
-            "slot": f"{_to_hhmm(start)}–{_to_hhmm(end)}",
-            "reason": t.get("reason"),
-            "fixed": False,
-        })
+            return
+        add(t, start, t.get("reason"))
+
+    # Phase 1: tasks with an explicit clock time are anchored exactly there.
+    for t in tasks:
+        if t.get("at_time"):
+            try:
+                add(t, _to_min(t["at_time"]), f"Fixed time you set ({t['at_time']}).")
+            except (ValueError, AttributeError):
+                flow(t)
+
+    # Phase 2: tasks you gave an explicit order — placed in that sequence (order > peak).
+    for t in sorted((x for x in tasks if not x.get("at_time") and x.get("order") is not None),
+                    key=lambda x: x["order"]):
+        flow(t, respect_peak=False)
+
+    # Phase 3: everything else — smart-prioritized (highest score first).
+    for t in sorted((x for x in tasks if not x.get("at_time") and x.get("order") is None),
+                    key=lambda x: x.get("priority_score") or 0, reverse=True):
+        flow(t)
 
     schedule += fixed_entries
     schedule.sort(key=lambda s: s["slot"] or "99:99")
-    return {"schedule": schedule, "assumptions": assumptions}
+
+    # Reorder the task list to match the schedule so the cards and timeline agree.
+    slot_start = {s["task"]: _to_min(s["slot"].split("–")[0]) for s in schedule if s.get("slot")}
+    tasks_sorted = sorted(tasks, key=lambda t: slot_start.get(t["title"], 9999))
+    return {"schedule": schedule, "assumptions": assumptions, "tasks": tasks_sorted}
 
 
 # ----------------------------------------------------------------------------

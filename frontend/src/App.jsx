@@ -70,9 +70,9 @@ export default function App() {
   // User edited difficulty / importance -> re-plan instantly in the browser (no LLM, no rate limit)
   function editTask(idx, field, value) {
     const edited = tasks.map((t, i) => (i === idx ? { ...t, [field]: value } : t));
-    const reordered = prioritize(edited);
-    const { schedule: sch, assumptions: asm } = scheduleDay(reordered, profile);
-    setTasks(reordered);
+    const scored = prioritize(edited);
+    const { schedule: sch, assumptions: asm, tasks: ordered } = scheduleDay(scored, profile);
+    setTasks(ordered);
     setSchedule(sch);
     setAssumptions(asm);
     setIcs(buildIcs(sch));

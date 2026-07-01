@@ -16,6 +16,12 @@ class Task(BaseModel):
         description="Specific start time as 'HH:MM' 24-hour, ONLY if the user named a clock time "
                     "(e.g. 'at 4 PM' -> '16:00', '9am' -> '09:00'); otherwise null",
     )
+    order: Optional[int] = Field(
+        None,
+        description="Sequence number 1,2,3... ONLY if the user explicitly stated an order "
+                    "(words like 'then', 'first', 'after that', 'next', or a numbered list). "
+                    "If tasks are just listed with no ordering intent, leave null.",
+    )
     category: Optional[str] = Field(None, description=f"In mein se ek: {CATEGORIES}")
     difficulty: Optional[str] = Field(None, description="Easy | Normal | Hard")
     # ye fields backend khud bharta hai:
