@@ -99,6 +99,26 @@ function dt(hhmm) {
   return `${stamp}T${h.padStart(2, "0")}${m.padStart(2, "0")}00`;
 }
 
+// One-click "Add to Google Calendar" link for a single scheduled task.
+// Opens Google Calendar with the event pre-filled — no OAuth, no API needed.
+export function googleCalUrl(slotItem) {
+  if (!slotItem.slot) return null;
+  const parts = slotItem.slot.replace("–", "-").split("-");
+  if (parts.length !== 2) return null;
+  const d = new Date();
+  const day = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+  const fmt = (hhmm) => `${day}T${hhmm.trim().replace(":", "")}00`;
+  const [start, end] = parts;
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: slotItem.task,
+    dates: `${fmt(start)}/${fmt(end)}`,
+    details: slotItem.reason || "Planned with Clutch",
+    ctz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
 export function buildIcs(schedule) {
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Clutch//EN", "CALSCALE:GREGORIAN"];
   schedule.forEach((s, i) => {

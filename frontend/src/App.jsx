@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { plan } from "./api";
-import { prioritize, scheduleDay, buildIcs } from "./planner";
+import { prioritize, scheduleDay, buildIcs, googleCalUrl } from "./planner";
 import "./App.css";
 
 // Difficulty options — clean, professional labels
@@ -224,6 +224,11 @@ export default function App() {
                   {s.task}{s.fixed && <span className="slot-tag">Fixed</span>}
                 </span>
                 {s.note && <span className="slot-note">{s.note}</span>}
+                {!s.fixed && s.slot && (
+                  <a className="gcal" href={googleCalUrl(s)} target="_blank" rel="noopener noreferrer">
+                    + Google Calendar
+                  </a>
+                )}
               </div>
             ))}
           </div>
