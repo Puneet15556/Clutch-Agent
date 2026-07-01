@@ -213,7 +213,7 @@ export default function App() {
         <section className="card">
           <div className="card-head">
             <h2 className="card-title">Today's schedule</h2>
-            {ics && <button className="ghost" onClick={downloadCalendar}>Add to calendar</button>}
+            {ics && <button className="ghost" onClick={downloadCalendar}>Add all to calendar</button>}
           </div>
 
           <div className="timeline">
