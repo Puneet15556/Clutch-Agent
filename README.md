@@ -157,8 +157,4 @@ clutch/
 └── Dockerfile             # one image: build React + serve via FastAPI
 ```
 
----
 
-<div align="center">
-Built for the BlockseBlock Hackathon · Problem Statement 1 — "The Last-Minute Life Saver"
-</div>
